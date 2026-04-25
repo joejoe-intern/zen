@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zen</title>
+    <link rel="icon" type="image/png" href="./img/favi.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #fbfaf8;
+        --text: #000000;
+        --line: #575757;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "IBM Plex Mono", monospace;
+        isolation: isolate;
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .warp-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
+
+      #warpCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: transparent;
+      }
+
+      .guide-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--line);
+        opacity: 0.45;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .guide-line.q1 {
+        left: 25%;
+      }
+
+      .guide-line.q2 {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .guide-line.q3 {
+        left: 75%;
+      }
+
+      .profile {
+        position: absolute;
+        top: 37px;
+        left: 44px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 3;
+      }
+
+      .profile h1 {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1;
+        font-weight: 600;
+      }
+
+      .profile nav {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .profile a,
+      .profile p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1;
+        font-weight: 500;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .artboard {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        height: 900px;
+        pointer-events: auto;
+        z-index: 5;
+      }
+
+      .human-body-layer,
+      .human-bone-layer {
+        position: absolute;
+        left: calc(25% - 220px);
+        top: 0;
+        transform: none;
+        width: 1020px;
+        height: 900px;
+        pointer-events: none;
+      }
+
+      .human-body,
+      .human-bone {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: auto;
+        height: 100%;
+        max-width: none;
+        object-fit: contain;
+        object-position: left top;
+      }
+
+      .human-bone-layer {
+        width: 1020px;
+        height: 900px;
+      }
+
+      .eye-hotspot {
+        position: absolute;
+        left: 21%;
+        top: 23%;
+        width: 30px;
+        height: 30px;
+        background-color: transparent;
+        background-image: url("./img/human-eye-day.png");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        border: 0;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 6;
+        padding: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        outline: none;
+        box-shadow: none;
+        display: block;
+        line-height: 0;
+        font-size: 0;
+      }
+
+      html.invert-mode .stage {
+        filter: invert(1) grayscale(1);
+      }
+
+      html.invert-mode body {
+        background-color: #000;
+      }
+
+      html.invert-mode .guide-line {
+        display: none;
+      }
+
+      /* MacBook Pro 14-inch baseline */
+      @media (min-width: 1512px) {
+        .artboard {
+          height: 960px;
+        }
+
+        .human-body-layer,
+        .human-bone-layer {
+          left: calc(25% - 270px);
+          width: 1123px;
+          height: 960px;
+        }
+
+        .human-bone-layer {
+          width: 1123px;
+          height: 960px;
+        }
+
+        .eye-hotspot {
+          left: calc(20% + 7px);
+          top: calc(23.3% + 2px);
+          width: 30px;
+          height: 30px;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .stage {
+          min-height: 1100px;
+        }
+
+        .profile {
+          position: relative;
+          top: auto;
+          left: auto;
+          padding: 28px 24px 0;
+        }
+
+        .artboard {
+          left: 0;
+          top: 240px;
+          width: 100%;
+          height: 580px;
+          transform: none;
+        }
+
+        .human-body-layer,
+        .human-bone-layer {
+          left: calc(25% - 10px);
+          transform: none;
+          width: 740px;
+          height: 580px;
+        }
+
+        .human-bone-layer {
+          width: 740px;
+          height: 580px;
+        }
+
+        .eye-hotspot {
+          left: 134px;
+          top: 133px;
+          width: 30px;
+          height: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <div class="guide-line q1" aria-hidden="true"></div>
+      <div class="guide-line q2" aria-hidden="true"></div>
+      <div class="guide-line q3" aria-hidden="true"></div>
+
+      <div class="warp-layer" aria-hidden="true">
+        <canvas id="warpCanvas"></canvas>
+      </div>
+
+      <section class="profile" aria-label="Profile and links">
+        <h1>Paimon&reg; Joe</h1>
+        <nav aria-label="Main links">
+          <p>Projects</p>
+          <p>Information</p>
+        </nav>
+        <nav aria-label="Contact links">
+          <p>Email</p>
+          <p>Instagram</p>
+        </nav>
+      </section>
+
+      <section class="artboard" aria-label="Body artboard">
+        <div class="human-body-layer">
+          <img class="human-body" src="./img/human-body.png" alt="" />
+          <button class="eye-hotspot" id="eyeHotspot" type="button" aria-label="Toggle invert mode"></button>
+        </div>
+        <div class="human-bone-layer">
+          <img class="human-bone" src="./img/human-bone.png" alt="" />
+        </div>
+      </section>
+    </main>
+    <script>
+      const warpCanvas = document.getElementById("warpCanvas");
+      const warpCtx = warpCanvas.getContext("2d");
+      const eyeHotspot = document.getElementById("eyeHotspot");
+      const stage = document.querySelector(".stage");
+      let dpr = window.devicePixelRatio || 1;
+
+      const warpColors = {
+        color1: "#EBF286",
+        color2: "#AD97EF",
+        color3: "#ED8872",
+        color4: "#C3DB75",
+        black: "#000",
+        white: "#fff",
+      };
+
+      let mouse = { x: 0, y: 0 };
+      let activeStoppedParticle = null;
+      let hoverParticle = null;
+
+      let baseVelocity = 0.7;
+      let extraVelocity = 0;
+      const friction = 0.95;
+
+      let boostTime = 0;
+      const boostDuration = 0.35;
+      const ORBIT_MAX_RADIUS = 255;
+      let orbitMargin = 10;
+      let orbitXStretch = 3.4;
+      let orbitYStretch = 1.1;
+      let ballRangeLeft = 0.3;
+      let ballRangeRight = 0.82;
+      let ballRangeCenter = 0.56;
+      let ballRangeCenterY = 0.53;
+      let ballRadius = 11;
+
+      function getBallPreset(viewportWidth) {
+        if (viewportWidth >= 1512) {
+          // MacBook Pro 14-inch
+          return {
+            orbitMargin: 6,
+            orbitXStretch: 4,
+            orbitYStretch: 1.23,
+            ballRangeLeft: 0.287,
+            ballRangeRight: 0.873,
+            ballRangeCenter: 0.58,
+            ballRangeCenterY: 0.53,
+            ballRadius: 12,
+          };
+        }
+
+        if (viewportWidth > 900) {
+          // General desktop / laptop
+          return {
+            orbitMargin: 10,
+            orbitXStretch: 3.4,
+            orbitYStretch: 1.1,
+            ballRangeLeft: 0.3,
+            ballRangeRight: 0.82,
+            ballRangeCenter: 0.56,
+            ballRangeCenterY: 0.53,
+            ballRadius: 11,
+          };
+        }
+
+        // Mobile
+        return {
+          orbitMargin: 16,
+          orbitXStretch: 2.3,
+          orbitYStretch: 1.02,
+          ballRangeLeft: 0.26,
+          ballRangeRight: 0.8,
+          ballRangeCenter: 0.53,
+          ballRangeCenterY: 0.56,
+          ballRadius: 9,
+        };
+      }
+
+      function applyBallPreset() {
+        const preset = getBallPreset(window.innerWidth);
+        orbitMargin = preset.orbitMargin;
+        orbitXStretch = preset.orbitXStretch;
+        orbitYStretch = preset.orbitYStretch;
+        ballRangeLeft = preset.ballRangeLeft;
+        ballRangeRight = preset.ballRangeRight;
+        ballRangeCenter = preset.ballRangeCenter;
+        ballRangeCenterY = preset.ballRangeCenterY;
+        ballRadius = preset.ballRadius;
+
+        for (const p of particles) p.radius = ballRadius;
+      }
+
+      function getWarpMetrics() {
+        const width = warpCanvas.width / dpr;
+        const height = warpCanvas.height / dpr;
+        const minX = width * ballRangeLeft;
+        const maxX = width * ballRangeRight;
+        const rangeCenterX = width * ballRangeCenter;
+        const safeRadiusX = Math.max(40, Math.min(rangeCenterX - minX, maxX - rangeCenterX) - orbitMargin);
+        const safeRadiusY = Math.max(40, height / 2 - orbitMargin);
+        const scaleX = safeRadiusX / (ORBIT_MAX_RADIUS * orbitXStretch);
+        const scaleY = safeRadiusY / ORBIT_MAX_RADIUS;
+        const scale = Math.min(1, scaleX, scaleY);
+        return { centerX: rangeCenterX, centerY: height * ballRangeCenterY, scale };
+      }
+
+      function resizeWarpCanvas() {
+        applyBallPreset();
+        const rect = warpCanvas.getBoundingClientRect();
+        dpr = window.devicePixelRatio || 1;
+        warpCanvas.width = rect.width * dpr;
+        warpCanvas.height = rect.height * dpr;
+        warpCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        for (const p of particles) {
+          p.trail = [];
+          p.lastPoint = null;
+          p.totalDistance = 0;
+        }
+      }
+
+      class Particle {
+        constructor() {
+          this.baseOffsetX = (Math.random() - 0.5) * 60;
+          this.baseOffsetY = (Math.random() - 0.5) * 60;
+          this.angle = Math.random() * Math.PI * 2;
+          this.speed = (Math.random() - 0.5) * 0.007;
+          this.wave1 = Math.random() * 2 + 2;
+          this.wave2 = Math.random() * 3 + 1;
+          this.wave3 = Math.random() * 4 + 1;
+
+          this.radius = ballRadius;
+          this.trail = [];
+          this.maxTrail = 600;
+          this.totalDistance = 0;
+          this.lastPoint = null;
+          const metrics = getWarpMetrics();
+          this.x = metrics.centerX;
+          this.y = metrics.centerY;
+        }
+
+        isMouseOver() {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          return Math.hypot(dx, dy) < this.radius;
+        }
+
+        update() {
+          if (activeStoppedParticle === this || hoverParticle === this) return;
+
+          if (boostTime > 0) boostTime -= 1 / 60;
+          else {
+            extraVelocity *= friction;
+            if (Math.abs(extraVelocity) < 0.001) extraVelocity = 0;
+          }
+
+          const totalVelocity = baseVelocity + extraVelocity;
+          this.angle += this.speed * totalVelocity;
+
+          const waveA = Math.sin(this.angle * this.wave1) * 60;
+          const waveB = Math.cos(this.angle * this.wave2) * 45;
+          const waveC = Math.sin(this.angle * this.wave3) * 30;
+          const metrics = getWarpMetrics();
+          const orbitRadius = (120 + waveA + waveB) * metrics.scale;
+          const drift = waveC * metrics.scale;
+
+          this.x =
+            metrics.centerX +
+            this.baseOffsetX * metrics.scale * orbitXStretch +
+            Math.cos(this.angle) * orbitRadius * orbitXStretch +
+            drift * orbitXStretch;
+          this.y =
+            metrics.centerY +
+            (this.baseOffsetY * metrics.scale + Math.sin(this.angle) * orbitRadius + drift) * orbitYStretch;
+
+          if (this.lastPoint) {
+            const dist = Math.hypot(this.x - this.lastPoint.x, this.y - this.lastPoint.y);
+            this.totalDistance += dist;
+          }
+
+          this.lastPoint = { x: this.x, y: this.y };
+          this.trail.push({ x: this.x, y: this.y, dist: this.totalDistance });
+          if (this.trail.length > this.maxTrail) this.trail.shift();
+        }
+
+        drawBackground() {
+          const isHover = this === hoverParticle;
+          const isLocked = activeStoppedParticle === this;
+          const hasInteraction = hoverParticle || activeStoppedParticle;
+          const isActive = isHover || isLocked;
+
+          if (hasInteraction && !isActive) {
+            warpCtx.globalAlpha = 1;
+            warpCtx.beginPath();
+            for (let i = 0; i < this.trail.length - 1; i++) {
+              warpCtx.globalAlpha = i / this.trail.length;
+              warpCtx.strokeStyle = warpColors.black;
+              warpCtx.moveTo(this.trail[i].x, this.trail[i].y);
+              warpCtx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+            }
+            warpCtx.lineWidth = 1.3;
+            warpCtx.stroke();
+            warpCtx.globalAlpha = 1;
+
+            warpCtx.font = "500 9px 'IBM Plex Mono', monospace";
+            warpCtx.textAlign = "center";
+            warpCtx.fillStyle = warpColors.black;
+            let lastMark = -9999;
+            const step = 120;
+            for (let i = 0; i < this.trail.length; i++) {
+              const p = this.trail[i];
+              const mark = Math.floor(p.dist / step);
+              const alpha = i / this.trail.length;
+              if (alpha < 0.15 || mark === lastMark) continue;
+              warpCtx.globalAlpha = alpha;
+              warpCtx.fillText(mark % 10, p.x, p.y - 4);
+              lastMark = mark;
+            }
+            warpCtx.globalAlpha = 1;
+            return;
+          }
+
+          warpCtx.beginPath();
+          for (let i = 0; i < this.trail.length - 1; i++) {
+            warpCtx.globalAlpha = i / this.trail.length;
+            let lineColor = warpColors.black;
+            if (isLocked) lineColor = warpColors.color2;
+            else if (isHover) lineColor = warpColors.color3;
+            warpCtx.strokeStyle = lineColor;
+            warpCtx.moveTo(this.trail[i].x, this.trail[i].y);
+            warpCtx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+          }
+          warpCtx.lineWidth = 1.3;
+          warpCtx.stroke();
+          warpCtx.globalAlpha = 1;
+
+          warpCtx.font = "500 9px 'IBM Plex Mono', monospace";
+          warpCtx.textAlign = "center";
+          let lastMark = -9999;
+          const step = 120;
+          for (let i = 0; i < this.trail.length; i++) {
+            const p = this.trail[i];
+            const mark = Math.floor(p.dist / step);
+            const alpha = i / this.trail.length;
+            if (alpha < 0.15 || mark === lastMark) continue;
+
+            warpCtx.globalAlpha = alpha;
+            const numColor = isLocked ? warpColors.color3 : warpColors.black;
+            warpCtx.fillStyle = numColor;
+            warpCtx.fillText(mark % 10, p.x, p.y - 4);
+
+            if (mark % 2 === 1) {
+              const size = 3.8;
+              const nextP = this.trail[i + 1] || p;
+              let dx = nextP.x - p.x;
+              let dy = nextP.y - p.y;
+              const len = Math.hypot(dx, dy) || 1;
+              dx /= len;
+              dy /= len;
+              const nx = -dy;
+              const ny = dx;
+
+              warpCtx.fillStyle = numColor;
+              warpCtx.beginPath();
+              warpCtx.moveTo(p.x + dx * size, p.y + dy * size);
+              warpCtx.lineTo(p.x - dx * size + nx * size * 0.7, p.y - dy * size + ny * size * 0.7);
+              warpCtx.lineTo(p.x - dx * size - nx * size * 0.7, p.y - dy * size - ny * size * 0.7);
+              warpCtx.closePath();
+              warpCtx.fill();
+            }
+            lastMark = mark;
+          }
+          warpCtx.globalAlpha = 1;
+        }
+
+        drawCircle() {
+          const isHover = this === hoverParticle;
+          const isLocked = activeStoppedParticle === this;
+
+          warpCtx.beginPath();
+          warpCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+
+          if (isLocked) {
+            warpCtx.fillStyle = warpColors.white;
+            warpCtx.fill();
+            warpCtx.strokeStyle = warpColors.color1;
+            warpCtx.lineWidth = 2.4;
+          } else if (isHover) {
+            warpCtx.fillStyle = warpColors.white;
+            warpCtx.fill();
+            warpCtx.strokeStyle = warpColors.color3;
+            warpCtx.lineWidth = 1.2;
+          } else {
+            warpCtx.fillStyle = warpColors.white;
+            warpCtx.fill();
+            warpCtx.strokeStyle = warpColors.black;
+            warpCtx.lineWidth = 1.2;
+          }
+
+          warpCtx.stroke();
+        }
+      }
+
+      const particles = Array(52)
+        .fill(null)
+        .map(() => new Particle());
+
+      function connect() {
+        const locked = activeStoppedParticle;
+        const hasInteract = hoverParticle || locked;
+
+        for (let a = 0; a < particles.length; a++) {
+          for (let b = a + 1; b < particles.length; b++) {
+            const pa = particles[a];
+            const pb = particles[b];
+            const dist = Math.hypot(pa.x - pb.x, pa.y - pb.y);
+            if (dist >= 120) continue;
+
+            warpCtx.beginPath();
+            const isTargetLine = locked && (pa === locked || pb === locked);
+
+            if (hasInteract && !isTargetLine) {
+              warpCtx.strokeStyle = warpColors.black;
+              warpCtx.globalAlpha = 0.03;
+            } else if (isTargetLine) {
+              warpCtx.strokeStyle = warpColors.color4;
+              warpCtx.globalAlpha = 0.05;
+            } else {
+              warpCtx.strokeStyle = warpColors.black;
+              warpCtx.globalAlpha = 0.03;
+            }
+
+            warpCtx.lineWidth = 0.5;
+            warpCtx.moveTo(pa.x, pa.y);
+            warpCtx.lineTo(pb.x, pb.y);
+            warpCtx.stroke();
+            warpCtx.globalAlpha = 1;
+          }
+        }
+      }
+
+      function drawOrbitBoundary() {
+        const metrics = getWarpMetrics();
+        const baseRadius = 120 + 60 + 45;
+        const radiusX = baseRadius * metrics.scale * orbitXStretch;
+        const radiusY = baseRadius * metrics.scale * orbitYStretch;
+
+        warpCtx.save();
+        warpCtx.beginPath();
+        warpCtx.strokeStyle = "rgba(255, 0, 0, 0.9)";
+        warpCtx.lineWidth = 1;
+        warpCtx.ellipse(metrics.centerX, metrics.centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        warpCtx.stroke();
+        warpCtx.restore();
+      }
+
+      function animate() {
+        warpCtx.clearRect(0, 0, warpCanvas.width / dpr, warpCanvas.height / dpr);
+        particles.forEach((p) => p.update());
+        particles.forEach((p) => p.drawBackground());
+        connect();
+        particles.forEach((p) => p.drawCircle());
+        requestAnimationFrame(animate);
+      }
+
+      warpCanvas.addEventListener("mousemove", (e) => {
+        const rect = warpCanvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+
+        hoverParticle = null;
+        for (const p of particles) {
+          if (p.isMouseOver()) {
+            hoverParticle = p;
+            break;
+          }
+        }
+      });
+
+      warpCanvas.addEventListener("mousedown", () => {
+        let found = null;
+        for (const p of particles) {
+          if (p.isMouseOver()) {
+            found = p;
+            break;
+          }
+        }
+        activeStoppedParticle = found ?? null;
+      });
+
+      function handleWheel(e) {
+        e.preventDefault();
+        extraVelocity += e.deltaY * 0.01;
+        extraVelocity = Math.max(-10, Math.min(extraVelocity, 5000));
+        boostTime = boostDuration;
+      }
+
+      stage.addEventListener("wheel", handleWheel, { passive: false });
+
+      function applyThemeMode(mode) {
+        if (mode === "dark") document.documentElement.classList.add("invert-mode");
+        else document.documentElement.classList.remove("invert-mode");
+      }
+
+      eyeHotspot.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.contains("invert-mode");
+        const nextMode = isDark ? "light" : "dark";
+        applyThemeMode(nextMode);
+      });
+
+      resizeWarpCanvas();
+      window.addEventListener("resize", resizeWarpCanvas);
+      animate();
+    </script>
+  </body>
+</html>
